@@ -3,8 +3,26 @@
 # Modified for our use case
 
 import json
+from airflow import DAG
 from airflow.decorators import dag, task
 from airflow.utils.dates import days_ago
+from airflow.models.baseoperator import chain
+from airflow.providers.amazon.aws.hooks.ecs import EcsClusterStates, EcsTaskStates
+from airflow.providers.amazon.aws.operators.ecs import (
+    EcsCreateClusterOperator,
+    EcsDeleteClusterOperator,
+    EcsDeregisterTaskDefinitionOperator,
+    EcsRegisterTaskDefinitionOperator,
+    EcsRunTaskOperator,
+)
+from airflow.providers.amazon.aws.sensors.ecs import (
+    EcsClusterStateSensor,
+    EcsTaskDefinitionStateSensor,
+    EcsTaskStateSensor,
+)
+from airflow.utils.trigger_rule import TriggerRule
+from tests_system_providers_amazon_aws_utils import ENV_ID_KEY, SystemTestContextBuilder
+
 
 import logging
 
@@ -15,13 +33,8 @@ logger = logging.getLogger(__name__)
 default_args = {
     'owner': 'harut',
 }
-from airflow.providers.amazon.aws.operators.ecs import (
-    EcsCreateClusterOperator,
-    EcsDeleteClusterOperator,
-    EcsDeregisterTaskDefinitionOperator,
-    EcsRegisterTaskDefinitionOperator,
-    EcsRunTaskOperator,
-)
+
+
 @dag(default_args=default_args, schedule_interval="@daily", start_date=days_ago(2), tags=['example'])
 def ecs_deployment_test():
 
