@@ -34,6 +34,26 @@ default_args = {
     'owner': 'harut',
 }
 
+# Externally fetched variables:
+EXISTING_CLUSTER_NAME_KEY = "CLUSTER_NAME"
+EXISTING_CLUSTER_SUBNETS_KEY = "SUBNETS"
+
+sys_test_context_task = (
+    SystemTestContextBuilder()
+    # NOTE:  Creating a functional ECS Cluster which uses EC2 requires manually creating
+    # and configuring a number of resources such as autoscaling groups, networking
+    # etc. which is out of scope for this demo and time-consuming for a system test
+    # To simplify this demo and make it run in a reasonable length of time as a
+    # system test, follow the steps below to create a new cluster on the AWS Console
+    # which handles all asset creation and configuration using default values:
+    # 1. https://us-east-1.console.aws.amazon.com/ecs/home?region=us-east-1#/clusters
+    # 2. Select "EC2 Linux + Networking" and hit "Next"
+    # 3. Name your cluster in the first field and click Create
+    .add_variable(EXISTING_CLUSTER_NAME_KEY)
+    .add_variable(EXISTING_CLUSTER_SUBNETS_KEY, split_string=True)
+    .build()
+)
+
 
 @dag(default_args=default_args, schedule_interval="@daily", start_date=days_ago(2), tags=['example'])
 def ecs_deployment_test():
@@ -41,6 +61,7 @@ def ecs_deployment_test():
     @task()
     def test_context():
         logger.info(">> test_context")
+        sys_test_context_task()
         logger.info("<< test_context")        
     @task()
     def aws_region():
