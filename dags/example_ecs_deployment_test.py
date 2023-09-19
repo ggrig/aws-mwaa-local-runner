@@ -61,7 +61,17 @@ def ecs_deployment_test():
     @task()
     def test_context():
         logger.info(">> test_context")
-        sys_test_context_task()
+
+        test_context = sys_test_context_task()
+        env_id = test_context[ENV_ID_KEY]
+        existing_cluster_name = test_context[EXISTING_CLUSTER_NAME_KEY]
+        existing_cluster_subnets = test_context[EXISTING_CLUSTER_SUBNETS_KEY]
+
+        new_cluster_name = f"{env_id}-cluster"
+        container_name = f"{env_id}-container"
+        family_name = f"{env_id}-task-definition"
+        asg_name = f"{env_id}-asg"
+
         logger.info("<< test_context")        
     @task()
     def aws_region():
