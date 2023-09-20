@@ -3,6 +3,7 @@
 # Modified for our use case
 
 import json
+import boto3
 from airflow import DAG
 from airflow.decorators import dag, task
 from airflow.utils.dates import days_ago
@@ -77,7 +78,8 @@ def ecs_deployment_test():
     @task()
     def aws_region(prev_result:bool):
         logger.info(">> aws_region")
-        logger.info("<< aws_region") 
+        aws_region = boto3.session.Session().region_name
+        logger.info(f"<< aws_region {aws_region}") 
         return True    
     @task()
     def create_cluster(prev_result:bool):
