@@ -22,8 +22,11 @@ from airflow.providers.amazon.aws.sensors.ecs import (
     EcsTaskStateSensor,
 )
 from airflow.utils.trigger_rule import TriggerRule
-from tests_system_providers_amazon_aws_utils import ENV_ID_KEY, SystemTestContextBuilder
-
+from tests_system_providers_amazon_aws_utils import (
+    ENV_ID_KEY,
+    DEFAULT_ENV_ID, 
+    SystemTestContextBuilder
+)
 
 import logging
 
@@ -55,77 +58,95 @@ sys_test_context_task = (
     .build()
 )
 
-
 @dag(default_args=default_args, schedule_interval="@daily", start_date=days_ago(2), tags=['example'])
 def ecs_deployment_test():
+
 
     @task()
     def test_context():
         logger.info(">> test_context")
 
         test_context = sys_test_context_task()
-        env_id = test_context[ENV_ID_KEY]
+        env_id = DEFAULT_ENV_ID
         existing_cluster_name = test_context[EXISTING_CLUSTER_NAME_KEY]
         existing_cluster_subnets = test_context[EXISTING_CLUSTER_SUBNETS_KEY]
 
-        new_cluster_name = f"{env_id}-cluster"
-        container_name = f"{env_id}-container"
-        family_name = f"{env_id}-task-definition"
-        asg_name = f"{env_id}-asg"
 
-        logger.info("<< test_context")
-        return True    
+        result = {
+           'new_cluster_name': f"{env_id}-cluster",
+           'container_name': f"{env_id}-container",
+           'family_name': f"{env_id}-task-definition",
+           'asg_name': f"{env_id}-asg",
+        }
+
+        logger.info(f"<< test_context")
+        return result    
     @task()
-    def aws_region(prev_result:bool):
+    def aws_region(prev_result:dict):
         logger.info(">> aws_region")
-        aws_region = boto3.session.Session().region_name
-        logger.info(f"<< aws_region {aws_region}") 
-        return True    
+        result = prev_result
+        result['aws_region'] = boto3.session.Session().region_name
+        logger.info(f"<< aws_region") 
+        return result
     @task()
-    def create_cluster(prev_result:bool):
+    def create_cluster(prev_result:dict):
         logger.info(">> create_cluster")
+        result = prev_result
+        # # [START howto_operator_ecs_create_cluster]
+        # create_cluster = EcsCreateClusterOperator(
+        #     task_id="create_cluster",
+        #     cluster_name=new_cluster_name,
+        # )        
         logger.info("<< create_cluster")
-        return True    
+        return result    
     @task()
-    def await_cluster(prev_result:bool):
+    def await_cluster(prev_result:dict):
         logger.info(">> await_cluster")
+        result = prev_result
         logger.info("<< await_cluster") 
-        return True    
+        return result    
     @task()
-    def register_task(prev_result:bool):
+    def register_task(prev_result:dict):
         logger.info(">> register_task")
+        result = prev_result
         logger.info("<< register_task") 
-        return True    
+        return result    
     @task()
-    def await_task_definition(prev_result:bool):
+    def await_task_definition(prev_result:dict):
         logger.info(">> await_task_definition")
+        result = prev_result
         logger.info("<< await_task_definition") 
-        return True    
+        return result    
     @task()
-    def run_task(prev_result:bool):
+    def run_task(prev_result:dict):
         logger.info(">> run_task")
+        result = prev_result
         logger.info("<< run_task") 
-        return True    
+        return result    
     @task()
-    def await_task_finish(prev_result:bool):
+    def await_task_finish(prev_result:dict):
         logger.info(">> await_task_finish")
+        result = prev_result
         logger.info("<< await_task_finish") 
-        return True    
+        return result    
     @task()
-    def deregister_task(prev_result:bool):
+    def deregister_task(prev_result:dict):
         logger.info(">> deregister_task")
+        result = prev_result
         logger.info("<< deregister_task") 
-        return True    
+        return result    
     @task()
-    def delete_cluster(prev_result:bool):
+    def delete_cluster(prev_result:dict):
         logger.info(">> delete_cluster")
+        result = prev_result
         logger.info("<< delete_cluster") 
-        return True    
+        return result    
     @task()
-    def await_delete_cluster(prev_result:bool):
+    def await_delete_cluster(prev_result:dict):
         logger.info(">> await_delete_cluster")
+        result = prev_result
         logger.info("<< await_delete_cluster") 
-        return True    
+        return result    
 
     test_context_result             = test_context()
     aws_region_result               = aws_region            (test_context_result)
