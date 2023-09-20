@@ -92,12 +92,19 @@ def ecs_deployment_test():
     def create_cluster(prev_result:dict):
         logger.info(">> create_cluster")
         result = prev_result
-        # # [START howto_operator_ecs_create_cluster]
+
+        # The following does not create an ECS cluster for an unclear reason
         # create_cluster = EcsCreateClusterOperator(
         #     task_id="create_cluster",
-        #     cluster_name=new_cluster_name,
-        # )        
-        logger.info("<< create_cluster")
+        #     region=result['aws_region'],
+        #     cluster_name=result['new_cluster_name'],
+        #     wait_for_completion=True,
+        # )
+
+        # Using boto3 instead
+        client = boto3.client("ecs", region_name=result['aws_region'])
+        response = client.create_cluster(clusterName=result['new_cluster_name'])
+        logger.info(f"<< create_cluster {json.dumps(response, indent=4)}")
         return result    
     @task()
     def await_cluster(prev_result:dict):
@@ -139,8 +146,10 @@ def ecs_deployment_test():
     def delete_cluster(prev_result:dict):
         logger.info(">> delete_cluster")
         result = prev_result
-        logger.info("<< delete_cluster") 
-        return result    
+        client = boto3.client("ecs", region_name=result['aws_region'])
+        response = client.delete_cluster(cluster=result['new_cluster_name'])
+        logger.info(f"<< delete_cluster {json.dumps(response, indent=4)}")
+        return result
     @task()
     def await_delete_cluster(prev_result:dict):
         logger.info(">> await_delete_cluster")
