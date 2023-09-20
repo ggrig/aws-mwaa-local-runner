@@ -72,58 +72,69 @@ def ecs_deployment_test():
         family_name = f"{env_id}-task-definition"
         asg_name = f"{env_id}-asg"
 
-        logger.info("<< test_context")        
+        logger.info("<< test_context")
+        return True    
     @task()
-    def aws_region():
+    def aws_region(prev_result:bool):
         logger.info(">> aws_region")
         logger.info("<< aws_region") 
+        return True    
     @task()
-    def create_cluster():
+    def create_cluster(prev_result:bool):
         logger.info(">> create_cluster")
         logger.info("<< create_cluster")
+        return True    
     @task()
-    def await_cluster():
+    def await_cluster(prev_result:bool):
         logger.info(">> await_cluster")
         logger.info("<< await_cluster") 
+        return True    
     @task()
-    def register_task():
+    def register_task(prev_result:bool):
         logger.info(">> register_task")
         logger.info("<< register_task") 
+        return True    
     @task()
-    def await_task_definition():
+    def await_task_definition(prev_result:bool):
         logger.info(">> await_task_definition")
         logger.info("<< await_task_definition") 
+        return True    
     @task()
-    def run_task():
+    def run_task(prev_result:bool):
         logger.info(">> run_task")
         logger.info("<< run_task") 
+        return True    
     @task()
-    def await_task_finish():
+    def await_task_finish(prev_result:bool):
         logger.info(">> await_task_finish")
         logger.info("<< await_task_finish") 
+        return True    
     @task()
-    def deregister_task():
+    def deregister_task(prev_result:bool):
         logger.info(">> deregister_task")
         logger.info("<< deregister_task") 
+        return True    
     @task()
-    def delete_cluster():
+    def delete_cluster(prev_result:bool):
         logger.info(">> delete_cluster")
         logger.info("<< delete_cluster") 
+        return True    
     @task()
-    def await_delete_cluster():
+    def await_delete_cluster(prev_result:bool):
         logger.info(">> await_delete_cluster")
         logger.info("<< await_delete_cluster") 
+        return True    
 
-    test_context()
-    aws_region()
-    create_cluster()
-    await_cluster()
-    register_task()
-    await_task_definition()
-    run_task()
-    await_task_finish()
-    deregister_task()
-    delete_cluster()
-    await_delete_cluster()
+    test_context_result             = test_context()
+    aws_region_result               = aws_region            (test_context_result)
+    create_cluster_result           = create_cluster        (aws_region_result)
+    await_cluster_result            = await_cluster         (create_cluster_result)
+    register_task_result            = register_task         (await_cluster_result)
+    await_task_definition_result    = await_task_definition (register_task_result)
+    run_task_result                 = run_task              (await_task_definition_result)
+    await_task_finish_result        = await_task_finish     (run_task_result)
+    deregister_task_result          = deregister_task       (await_task_finish_result)
+    delete_cluster_result           = delete_cluster        (deregister_task_result)
+    await_delete_cluster_result     = await_delete_cluster  (delete_cluster_result)
 
 ecs_deployment_test = ecs_deployment_test()
