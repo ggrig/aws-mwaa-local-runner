@@ -116,30 +116,112 @@ def ecs_deployment_test():
     def register_task(prev_result:dict):
         logger.info(">> register_task")
         result = prev_result
+
+        # # [START howto_operator_ecs_register_task_definition]
+        # register_ecs_task = EcsRegisterTaskDefinitionOperator(
+        #     task_id="register_ecs_task",
+        #     family=result['family_name'],
+        #     container_definitions=[
+        #         {
+        #             "name": result['container_name'],
+        #             "image": "ubuntu",
+        #             "workingDirectory": "/usr/bin",
+        #             "entryPoint": ["sh", "-c"],
+        #             "command": ["ls"],
+        #         }
+        #     ],
+        #     register_task_kwargs={
+        #         "cpu": "256",
+        #         "memory": "512",
+        #         "networkMode": "awsvpc",
+        #     },
+        # )
+        # # [END howto_operator_ecs_register_task_definition]
+
+        # # [START howto_sensor_ecs_task_definition_state]
+        # await_task_definition = EcsTaskDefinitionStateSensor(
+        #     task_id="await_task_definition",
+        #     task_definition=register_ecs_task.output,
+        # )
+        # # [END howto_sensor_ecs_task_definition_state]
+
+        # ecsTaskExecutionRole
+        # with AmazonECSTaskExecutionRolePolicy 
+        # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html
+
+        client = boto3.client("ecs", region_name=result['aws_region'])
+        response = client.register_task_definition(
+                containerDefinitions=[
+                    {
+                        "name": "AmazonSampleImage",
+                        "image": "amazon/amazon-ecs-sample",
+                        "cpu": 0,
+                        "portMappings": [],
+                        "essential": True,
+                        "environment": [],
+                        "mountPoints": [],
+                        "volumesFrom": [],
+                        "logConfiguration": {
+                            "logDriver": "awslogs",
+                            "options": {
+                                "awslogs-group": "/ecs/AWSSampleApp",
+                                "awslogs-region": result['aws_region'],
+                                "awslogs-stream-prefix": "ecs"
+                            }
+                        }
+                    }
+                ],
+                executionRoleArn="arn:aws:iam::548097210593:role/ecsTaskExecutionRole",
+                family= "AWSSampleApp2",
+                networkMode="awsvpc",
+                requiresCompatibilities= [
+                    "FARGATE"
+                ],
+                cpu= "256",
+                memory= "512")
+        print(json.dumps(response, indent=4, default=str))        
+
         logger.info("<< register_task") 
         return result    
     @task()
     def await_task_definition(prev_result:dict):
         logger.info(">> await_task_definition")
         result = prev_result
+        client = boto3.client("ecs", region_name=result['aws_region'])
         logger.info("<< await_task_definition") 
         return result    
     @task()
     def run_task(prev_result:dict):
         logger.info(">> run_task")
         result = prev_result
+        client = boto3.client("ecs", region_name=result['aws_region'])
         logger.info("<< run_task") 
         return result    
     @task()
     def await_task_finish(prev_result:dict):
         logger.info(">> await_task_finish")
         result = prev_result
+        client = boto3.client("ecs", region_name=result['aws_region'])
         logger.info("<< await_task_finish") 
         return result    
     @task()
     def deregister_task(prev_result:dict):
         logger.info(">> deregister_task")
         result = prev_result
+        client = boto3.client("ecs", region_name=result['aws_region'])
+
+        paginator = client.get_paginator('list_task_definitions')
+        response_iterator = paginator.paginate(
+            PaginationConfig={
+                'PageSize':100
+            }
+        )
+        for each_page in response_iterator:
+            for each_task_definition in each_page['taskDefinitionArns']:
+                response = client.deregister_task_definition(
+                                taskDefinition=each_task_definition)
+        # print(json.dumps(response, indent=4, default=str))
+
         logger.info("<< deregister_task") 
         return result    
     @task()
@@ -154,6 +236,7 @@ def ecs_deployment_test():
     def await_delete_cluster(prev_result:dict):
         logger.info(">> await_delete_cluster")
         result = prev_result
+        client = boto3.client("ecs", region_name=result['aws_region'])
         logger.info("<< await_delete_cluster") 
         return result    
 
