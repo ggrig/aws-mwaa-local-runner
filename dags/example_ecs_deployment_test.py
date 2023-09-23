@@ -4,6 +4,7 @@
 
 import json
 import boto3
+from time import sleep
 from airflow import DAG
 from airflow.decorators import dag, task
 from airflow.utils.dates import days_ago
@@ -117,38 +118,6 @@ def ecs_deployment_test():
         logger.info(">> register_task")
         result = prev_result
 
-        # # [START howto_operator_ecs_register_task_definition]
-        # register_ecs_task = EcsRegisterTaskDefinitionOperator(
-        #     task_id="register_ecs_task",
-        #     family=result['family_name'],
-        #     container_definitions=[
-        #         {
-        #             "name": result['container_name'],
-        #             "image": "ubuntu",
-        #             "workingDirectory": "/usr/bin",
-        #             "entryPoint": ["sh", "-c"],
-        #             "command": ["ls"],
-        #         }
-        #     ],
-        #     register_task_kwargs={
-        #         "cpu": "256",
-        #         "memory": "512",
-        #         "networkMode": "awsvpc",
-        #     },
-        # )
-        # # [END howto_operator_ecs_register_task_definition]
-
-        # # [START howto_sensor_ecs_task_definition_state]
-        # await_task_definition = EcsTaskDefinitionStateSensor(
-        #     task_id="await_task_definition",
-        #     task_definition=register_ecs_task.output,
-        # )
-        # # [END howto_sensor_ecs_task_definition_state]
-
-        # ecsTaskExecutionRole
-        # with AmazonECSTaskExecutionRolePolicy 
-        # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html
-
         client = boto3.client("ecs", region_name=result['aws_region'])
         response = client.register_task_definition(
                 containerDefinitions=[
@@ -179,7 +148,7 @@ def ecs_deployment_test():
                 ],
                 cpu= "256",
                 memory= "512")
-        print(json.dumps(response, indent=4, default=str))        
+        logger.info(json.dumps(response, indent=4, default=str))        
 
         logger.info("<< register_task") 
         return result    
@@ -195,6 +164,26 @@ def ecs_deployment_test():
         logger.info(">> run_task")
         result = prev_result
         client = boto3.client("ecs", region_name=result['aws_region'])
+
+        ec2 = boto3.resource('ec2')
+        response = client.run_task(
+            taskDefinition='AWSSampleApp2',
+            launchType='FARGATE',
+            cluster=result['new_cluster_name'],
+            platformVersion='LATEST',
+            count=1,
+            networkConfiguration={
+                'awsvpcConfiguration': {
+                    'subnets': [
+                        'subnet-0477a1059cffb4665',
+                    ],
+                    'assignPublicIp': 'ENABLED',
+                    'securityGroups': ["sg-06d507a76c7575cc3"]
+                }
+            }
+        )
+        logger.info(json.dumps(response, indent=4, default=str))
+
         logger.info("<< run_task") 
         return result    
     @task()
@@ -202,6 +191,18 @@ def ecs_deployment_test():
         logger.info(">> await_task_finish")
         result = prev_result
         client = boto3.client("ecs", region_name=result['aws_region'])
+
+        paginator = client.get_paginator('list_tasks')
+        response_iterator = paginator.paginate(
+            PaginationConfig={
+                'PageSize':100
+            }
+        )
+        for each_page in response_iterator:
+            for each_task in each_page['taskArns']:
+                response = client.stop_task(task=each_task)
+                logger.info(json.dumps(response, indent=4, default=str))
+
         logger.info("<< await_task_finish") 
         return result    
     @task()
@@ -220,7 +221,7 @@ def ecs_deployment_test():
             for each_task_definition in each_page['taskDefinitionArns']:
                 response = client.deregister_task_definition(
                                 taskDefinition=each_task_definition)
-        # print(json.dumps(response, indent=4, default=str))
+                logger.info(json.dumps(response, indent=4, default=str))
 
         logger.info("<< deregister_task") 
         return result    
@@ -229,8 +230,29 @@ def ecs_deployment_test():
         logger.info(">> delete_cluster")
         result = prev_result
         client = boto3.client("ecs", region_name=result['aws_region'])
-        response = client.delete_cluster(cluster=result['new_cluster_name'])
-        logger.info(f"<< delete_cluster {json.dumps(response, indent=4)}")
+
+        tasks_stopped = False
+        for i in range(1,10):
+            tasks_stopped = True
+            paginator = client.get_paginator('list_tasks')
+            response_iterator = paginator.paginate(
+                PaginationConfig={
+                    'PageSize':100
+                }
+            )
+            counter = 1
+            for each_page in response_iterator:
+                for each_task in each_page['taskArns']:
+                    logger.info(each_task)
+                    tasks_stopped = False
+            sleep(10)
+
+        if tasks_stopped:
+            response = client.delete_cluster(cluster=result['new_cluster_name'])
+            logger.info(f"<< delete_cluster {json.dumps(response, indent=4)}")
+        else:
+            logger.info(f"<< delete_cluster: not stopped tasks present")
+
         return result
     @task()
     def await_delete_cluster(prev_result:dict):
