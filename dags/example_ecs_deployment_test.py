@@ -93,25 +93,9 @@ def ecs_deployment_test():
     def create_cluster(prev_result:dict):
         logger.info(">> create_cluster")
         result = prev_result
-
-        # The following does not create an ECS cluster for an unclear reason
-        # create_cluster = EcsCreateClusterOperator(
-        #     task_id="create_cluster",
-        #     region=result['aws_region'],
-        #     cluster_name=result['new_cluster_name'],
-        #     wait_for_completion=True,
-        # )
-
-        # Using boto3 instead
         client = boto3.client("ecs", region_name=result['aws_region'])
         response = client.create_cluster(clusterName=result['new_cluster_name'])
         logger.info(f"<< create_cluster {json.dumps(response, indent=4)}")
-        return result    
-    @task()
-    def await_cluster(prev_result:dict):
-        logger.info(">> await_cluster")
-        result = prev_result
-        logger.info("<< await_cluster") 
         return result    
     @task()
     def register_task(prev_result:dict):
@@ -151,13 +135,6 @@ def ecs_deployment_test():
         logger.info(json.dumps(response, indent=4, default=str))        
 
         logger.info("<< register_task") 
-        return result    
-    @task()
-    def await_task_definition(prev_result:dict):
-        logger.info(">> await_task_definition")
-        result = prev_result
-        client = boto3.client("ecs", region_name=result['aws_region'])
-        logger.info("<< await_task_definition") 
         return result    
     @task()
     def run_task(prev_result:dict):
@@ -245,6 +222,8 @@ def ecs_deployment_test():
                 for each_task in each_page['taskArns']:
                     logger.info(each_task)
                     tasks_stopped = False
+            if tasks_stopped:
+                pass # break
             sleep(10)
 
         if tasks_stopped:
@@ -254,24 +233,14 @@ def ecs_deployment_test():
             logger.info(f"<< delete_cluster: not stopped tasks present")
 
         return result
-    @task()
-    def await_delete_cluster(prev_result:dict):
-        logger.info(">> await_delete_cluster")
-        result = prev_result
-        client = boto3.client("ecs", region_name=result['aws_region'])
-        logger.info("<< await_delete_cluster") 
-        return result    
 
     test_context_result             = test_context()
     aws_region_result               = aws_region            (test_context_result)
     create_cluster_result           = create_cluster        (aws_region_result)
-    await_cluster_result            = await_cluster         (create_cluster_result)
-    register_task_result            = register_task         (await_cluster_result)
-    await_task_definition_result    = await_task_definition (register_task_result)
-    run_task_result                 = run_task              (await_task_definition_result)
+    register_task_result            = register_task         (create_cluster_result)
+    run_task_result                 = run_task              (register_task_result)
     await_task_finish_result        = await_task_finish     (run_task_result)
     deregister_task_result          = deregister_task       (await_task_finish_result)
     delete_cluster_result           = delete_cluster        (deregister_task_result)
-    await_delete_cluster_result     = await_delete_cluster  (delete_cluster_result)
 
 ecs_deployment_test = ecs_deployment_test()
