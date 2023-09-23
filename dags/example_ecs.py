@@ -56,9 +56,9 @@ sys_test_context_task = (
     # which handles all asset creation and configuration using default values:
     # 1. https://us-east-1.console.aws.amazon.com/ecs/home?region=us-east-1#/clusters
     # 2. Select "EC2 Linux + Networking" and hit "Next"
-    # 3. Name your cluster in the first field and click Create
-    .add_variable(EXISTING_CLUSTER_NAME_KEY)
-    .add_variable(EXISTING_CLUSTER_SUBNETS_KEY, split_string=True)
+    # 3. Name your cluster in the first field and click Create 
+    .add_variable(EXISTING_CLUSTER_NAME_KEY, split_string=False, delimiter=None, default_value="DevClusterEC2")
+    .add_variable(EXISTING_CLUSTER_SUBNETS_KEY, split_string=True, delimiter=',', default_value="subnet-0477a1059cffb4665")
     .build()
 )
 
