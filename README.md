@@ -204,3 +204,21 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 ## License
 
 This library is licensed under the MIT-0 License. See the LICENSE file.
+
+## AWS ECS DAGs 
+
+The code in this branch is adapted to run DAGs in AWS environment
+
+### Configuration changes
+
+- .aws directory - this gets mounted to /usr/local/airflow/.aws in the docker container. If you can place your AWS credentials and config files here those will be utilized by the docker container to establish Airflow to your AWS account connection 
+- logs directory - this gets mounted to /usr/local/airflow/logs in the docker container. Allows to access the logs directory directly without opening the docker bash terminal.
+
+### ECS Dags
+
+dags/example_dag_with_taskflow_api.py
+This example builds an ECS cluster and starts a Fargate task
+Utilizes boto3 to build/delete AWS infrastructure elements
+
+dags/example_ecs.py
+This one is a slightly modified version of the [Airflow ECS example](https://github.com/apache/airflow/blob/providers-amazon/6.1.0/tests/system/providers/amazon/aws/example_ecs.py) Is supposed to start a docker container on ECS over EC2 cluster
