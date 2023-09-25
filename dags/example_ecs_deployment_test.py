@@ -175,10 +175,14 @@ def ecs_deployment_test():
                 'PageSize':100
             }
         )
-        for each_page in response_iterator:
-            for each_task in each_page['taskArns']:
-                response = client.stop_task(task=each_task)
-                logger.info(json.dumps(response, indent=4, default=str))
+        try:
+            for each_page in response_iterator:
+                print(each_page['Contents'])
+                for each_task in each_page['taskArns']:
+                    response = client.stop_task(task=each_task)
+                    logger.info(json.dumps(response, indent=4, default=str))
+        except Exception as e:
+            logger.error(str(e))
 
         logger.info("<< await_task_finish") 
         return result    
@@ -194,11 +198,14 @@ def ecs_deployment_test():
                 'PageSize':100
             }
         )
-        for each_page in response_iterator:
-            for each_task_definition in each_page['taskDefinitionArns']:
-                response = client.deregister_task_definition(
-                                taskDefinition=each_task_definition)
-                logger.info(json.dumps(response, indent=4, default=str))
+        try:
+            for each_page in response_iterator:
+                for each_task_definition in each_page['taskDefinitionArns']:
+                    response = client.deregister_task_definition(
+                                    taskDefinition=each_task_definition)
+                    logger.info(json.dumps(response, indent=4, default=str))
+        except Exception as e:
+            logger.error(str(e))
 
         logger.info("<< deregister_task") 
         return result    
@@ -218,10 +225,14 @@ def ecs_deployment_test():
                 }
             )
             counter = 1
-            for each_page in response_iterator:
-                for each_task in each_page['taskArns']:
-                    logger.info(each_task)
-                    tasks_stopped = False
+            try:
+                for each_page in response_iterator:
+                    for each_task in each_page['taskArns']:
+                        logger.info(each_task)
+                        tasks_stopped = False
+            except Exception as e:
+                logger.error(str(e))
+
             if tasks_stopped:
                 pass # break
             sleep(10)
