@@ -124,7 +124,7 @@ def ecs_deployment_test():
                         }
                     }
                 ],
-                executionRoleArn="arn:aws:iam::548097210593:role/ecsTaskExecutionRole",
+                executionRoleArn="arn:aws:iam::181017890931:role/ecsTaskExecutionRole",
                 family= "AWSSampleApp2",
                 networkMode="awsvpc",
                 requiresCompatibilities= [
@@ -152,10 +152,10 @@ def ecs_deployment_test():
             networkConfiguration={
                 'awsvpcConfiguration': {
                     'subnets': [
-                        'subnet-0477a1059cffb4665',
+                        'subnet-0b4760b63c04404bf',
                     ],
                     'assignPublicIp': 'ENABLED',
-                    'securityGroups': ["sg-06d507a76c7575cc3"]
+                    'securityGroups': ["sg-0dda3439000769520"]
                 }
             }
         )
